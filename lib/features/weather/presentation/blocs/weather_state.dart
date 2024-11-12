@@ -7,9 +7,13 @@ class WeatherState extends Equatable {
   List<Object?> get props => [];
 }
 
-class WeatherIddleState extends WeatherState {}
+class WeatherIddleState extends WeatherState {
+  const WeatherIddleState();
+}
 
-class WeatherLoadingState extends WeatherState {}
+class WeatherLoadingState extends WeatherState {
+  const WeatherLoadingState();
+}
 
 class WeatherErrorState extends WeatherState {
   const WeatherErrorState(this.error);
@@ -19,4 +23,18 @@ class WeatherErrorState extends WeatherState {
   List<Object?> get props => [error];
 }
 
-class WeatherSuccessState extends WeatherState {}
+class WeatherSuccessSaveState extends WeatherState {
+  const WeatherSuccessSaveState();
+}
+
+class WeatherSuccessDeleteState extends WeatherState {
+  const WeatherSuccessDeleteState(this.index);
+  final int index;
+
+  @override
+  List<Object?> get props => [index];
+}
+
+class WeatherSuccessState extends WeatherState {
+  const WeatherSuccessState();
+}

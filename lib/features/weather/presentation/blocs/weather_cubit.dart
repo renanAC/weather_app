@@ -13,7 +13,7 @@ class WeatherCubit extends Cubit<WeatherState> {
     this._deleteWeatherUseCase,
     this._updateWeatherUseCase,
     this._saveWeatherUseCase,
-  ) : super(WeatherIddleState());
+  ) : super(const WeatherIddleState());
   final WeatherUseCase _useCaseWeather;
   final DeleteWeatherUseCase _deleteWeatherUseCase;
   final UpdateWeatherUseCase _updateWeatherUseCase;
@@ -27,19 +27,19 @@ class WeatherCubit extends Cubit<WeatherState> {
   List<WeatherModel> weathers = [];
 
   Future<void> getWeather() async {
-    emit(WeatherLoadingState());
+    emit(const WeatherLoadingState());
     var responseWeather = await _useCaseWeather.call(filterCity);
     responseWeather.fold(
       (failure) => _resolveFailue(failure, 'Request Error:'),
       (success) {
         weathers = success.result.reversed.toList();
-        emit(WeatherSuccessState());
+        emit(const WeatherSuccessState());
       },
     );
   }
 
   Future<bool> delete(String id) async {
-    emit(WeatherIddleState());
+    emit(const WeatherIddleState());
     var success = false;
     var responseWeather = await _deleteWeatherUseCase.call(id);
     responseWeather.fold(
@@ -50,7 +50,7 @@ class WeatherCubit extends Cubit<WeatherState> {
   }
 
   Future<void> save() async {
-    emit(WeatherIddleState());
+    emit(const WeatherIddleState());
 
     final saveParams = SaveParams(_getId, filterCity ?? '');
     final responseWeather = await _saveWeatherUseCase.call(saveParams);
@@ -59,14 +59,15 @@ class WeatherCubit extends Cubit<WeatherState> {
       (failure) => _resolveFailue(failure, 'Save Error:'),
       (success) {
         weathers.insert(0, success.result);
-        emit(WeatherSuccessState());
+        emit(const WeatherSuccessSaveState());
       },
     );
 
     filterCity = null;
   }
 
-  String get _getId => (int.parse(weathers.first.id) + 1).toString();
+  String get _getId =>
+      (int.parse(weathers.isEmpty ? '0' : weathers.first.id) + 1).toString();
 
   Future<void> update(WeatherModel weather) async {
     final updateWether = weather.copyWith(city: filterCity);
@@ -79,10 +80,10 @@ class WeatherCubit extends Cubit<WeatherState> {
   }
 
   void _updateItem(WeatherModel weather) {
-    emit(WeatherIddleState());
+    emit(const WeatherIddleState());
     final index = weathers.indexWhere((e) => e.id == weather.id);
     weathers[index] = weather;
-    emit(WeatherSuccessState());
+    emit(const WeatherSuccessState());
   }
 
   _resolveFailue(AppFailure failure, String customReturn) {
@@ -99,8 +100,9 @@ class WeatherCubit extends Cubit<WeatherState> {
   }
 
   void removeItem(String id) {
-    emit(WeatherIddleState());
-    weathers.removeWhere((e) => e.id == id);
-    emit(WeatherSuccessState());
+    emit(const WeatherIddleState());
+    final index = weathers.indexWhere((e) => e.id == id);
+    weathers.removeAt(index);
+    emit(WeatherSuccessDeleteState(index));
   }
 }

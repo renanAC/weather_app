@@ -20,6 +20,7 @@ class WeatherList extends StatefulWidget {
 class _WeatherCarrouselState extends State<WeatherList> {
   late final WeatherCubit _weathersCubit;
   TextEditingController cityControlleText = TextEditingController();
+  final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
 
   @override
   void initState() {
@@ -36,6 +37,19 @@ class _WeatherCarrouselState extends State<WeatherList> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(state.error),
           ));
+        }
+
+        if (state is WeatherSuccessSaveState) {
+          listKey.currentState
+              ?.insertItem(0, duration: const Duration(milliseconds: 500));
+        }
+
+        if (state is WeatherSuccessDeleteState) {
+          listKey.currentState?.removeItem(
+            state.index,
+            (_, __) => const SizedBox.shrink(),
+            duration: const Duration(milliseconds: 0),
+          );
         }
       },
       builder: (context, state) {
@@ -59,6 +73,7 @@ class _WeatherCarrouselState extends State<WeatherList> {
                 if (context.read<WeatherCubit>().weathers.isNotEmpty) ...{
                   _WeathersLoaded(
                     onTapItem: (weather) => _editDialog(context, weather),
+                    listKey: listKey,
                   )
                 },
                 if (state is WeatherLoadingState) ...{_WeathersLoading()},
@@ -148,24 +163,34 @@ class _Inputs extends StatelessWidget {
 class _WeathersLoaded extends StatelessWidget {
   const _WeathersLoaded({
     required this.onTapItem,
+    required this.listKey,
   });
 
   final void Function(WeatherModel weather) onTapItem;
+  final GlobalKey<AnimatedListState> listKey;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-        child: CustomScrollView(
-      slivers: [
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              var weather = context.read<WeatherCubit>().weathers[index];
-              return GestureDetector(
-                onTap: () => onTapItem(weather),
-                child: SizedBox(
-                  width: 200,
-                  height: 200,
+      child: AnimatedList(
+        key: listKey,
+        shrinkWrap: true,
+        itemBuilder: (context, index, animation) {
+          var weather = context.read<WeatherCubit>().weathers[index];
+          return GestureDetector(
+            onTap: () => onTapItem(weather),
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, -1),
+                end: const Offset(0, 0),
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeIn),
+              ),
+              child: SizedBox(
+                width: 200,
+                height: 200,
+                child: SizeTransition(
+                  sizeFactor: animation,
                   child: WeatherItem(
                     image: weather.avatar,
                     semanticLabel: weather.temperature,
@@ -174,13 +199,13 @@ class _WeathersLoaded extends StatelessWidget {
                     id: weather.id,
                   ),
                 ),
-              );
-            },
-            childCount: context.read<WeatherCubit>().weathers.length,
-          ),
-        )
-      ],
-    ));
+              ),
+            ),
+          );
+        },
+        initialItemCount: context.read<WeatherCubit>().weathers.length,
+      ),
+    );
   }
 }
 
@@ -207,9 +232,7 @@ class _WeathersLoading extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(
-                height: context.dimessions.spacers.spacer16,
-              ),
+              SizedBox(height: context.dimessions.spacers.spacer16),
             ],
           ),
         ),
